@@ -1,12 +1,9 @@
 const express = require("express");
 const router = express.Router();
 
-const { handleWebhook, testWebhook } = require("../controllers/webhookController");
+const { handleWebhook } = require("../controllers/webhookController");
 
-// POST (GitHub webhook)
+// GitHub will call this route
 router.post("/", handleWebhook);
-
-// GET (browser test)
-router.get("/", testWebhook);
 
 module.exports = router;

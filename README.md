@@ -47,3 +47,49 @@ ai-code-reviewer/
 ### 🎯 Purpose:
 
 This step sets up the basic environment required to build the AI Code Reviewer backend system.
+
+
+
+## .env File Configuration
+
+This project uses environment variables to keep sensitive information secure.
+
+Create a .env file in the root directory and add the following:
+
+GITHUB_TOKEN=your_github_token
+AI_API_KEY=your_ai_api_key
+PORT=5000
+
+
+
+## Database Models (MongoDB)
+
+In this step, we define the database structure using MongoDB (Mongoose).
+These models help store GitHub Pull Request data and AI-generated code review results.
+
+Models Created
+1. PullRequest Model
+
+## This model stores basic information about each GitHub Pull Request.
+
+Fields:
+
+repoName → Repository name
+prId → Pull request number
+title → PR title
+author → GitHub username
+2. Review Model
+
+## This model stores AI analysis results for each PR.
+
+Fields:
+
+prId → Pull request number
+issues → Array of detected issues
+type → Bug / Security / Improvement
+description → Problem found in code
+suggestedFix → Recommended fix by AI
+
+🛠️ Tech Used
+MongoDB (Database)
+Mongoose (ODM for Node.js)
