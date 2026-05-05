@@ -13,11 +13,19 @@
   "type": "commonjs",
   "dependencies": {
     "@octokit/rest": "^22.0.1",
-    "axios": "^1.15.2",
+    "axios": "^1.16.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "mongoose": "^9.5.0",
+    "mongoose": "^9.6.1",
     "openai": "^6.34.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chachleshrutika59-cmyk/ai-code-reviewerr.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chachleshrutika59-cmyk/ai-code-reviewerr/issues"
+  },
+  "homepage": "https://github.com/chachleshrutika59-cmyk/ai-code-reviewerr#readme"
 }
