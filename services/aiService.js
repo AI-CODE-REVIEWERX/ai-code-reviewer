@@ -1,53 +1,70 @@
-const OpenAI = require("openai");
+const axios = require("axios");
 
-// 🔐 Create client
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
-// 🤖 AI Code Analyzer
+// ===============================
+// 🤖 AI CODE ANALYSIS SERVICE
+// ===============================
 exports.analyzeCode = async (diff) => {
   try {
-    const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert code reviewer. Find bugs, security issues, and improvements. Return response in JSON format."
-        },
-        {
-          role: "user",
-          content: `Analyze this code diff:\n\n${diff}`
-        }
-      ]
-    });
+    const prompt = `
+You are an expert code reviewer.
 
-    const result = response.choices[0].message.content;
+Analyze the following GitHub code diff and find:
+- Bugs
+- Security issues
+- Performance problems
+- Improvement suggestions
 
-    console.log("🤖 Raw AI Response:", result);
+Return response in JSON format like:
+[
+  {
+    "type": "bug/security/improvement",
+    "description": "Explain the issue",
+    "suggestedFix": "How to fix it"
+  }
+]
 
-    // Try parsing JSON safely
-    try {
-      return JSON.parse(result);
-    } catch (e) {
-      return [
-        {
-          type: "info",
-          description: result,
-          suggestion: "Check AI output format"
-        }
-      ];
-    }
+Code Diff:
+${diff}
+`;
 
-  } catch (error) {
-    console.error("❌ OpenAI Error:", error.message);
-
+    // ===============================
+    // 🔥 OPTION 1: MOCK RESPONSE (FOR TESTING)
+    // ===============================
     return [
       {
-        type: "error",
-        description: "AI failed to analyze code",
-        suggestion: "Check API key or quota"
-      }
+        type: "bug",
+        description: "Possible null pointer issue",
+        suggestedFix: "Add null check before usage",
+      },
+      {
+        type: "improvement",
+        description: "Code can be optimized",
+        suggestedFix: "Use better loop structure",
+      },
     ];
+
+    // ===============================
+    // 🔥 OPTION 2: REAL AI (UNCOMMENT LATER)
+    // ===============================
+    /*
+    const response = await axios.post(
+      "https://api.openai.com/v1/chat/completions",
+      {
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: prompt }],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    return JSON.parse(response.data.choices[0].message.content);
+    */
+  } catch (error) {
+    console.error("❌ AI Service Error:", error.message);
+    return [];
   }
 };

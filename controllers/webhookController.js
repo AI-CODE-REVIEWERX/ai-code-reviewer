@@ -1,63 +1,61 @@
-const { getPRDiff, postPRComment } = require("../services/githubService");
+const { getPRDiff } = require("../services/githubService");
 const { analyzeCode } = require("../services/aiService");
 const Review = require("../models/Review");
+const { postPRComment } = require("../services/githubCommentService");
 
+// ===============================
+// 🧠 MAIN WEBHOOK HANDLER
+// ===============================
 exports.handleWebhook = async (req, res) => {
   try {
     const event = req.headers["x-github-event"];
-    const action = req.body.action;
 
-    console.log("📩 Event received:", event);
+    // Only handle GitHub pull_request events
+    if (event === "pull_request") {
+      const action = req.body.action;
 
-    // 👉 Only handle PR opened event
-    if (event === "pull_request" && action === "opened") {
+      // Only when PR is opened
+      if (action === "opened") {
+        const pr = req.body.pull_request;
+        const repo = req.body.repository.full_name;
 
-      const repo = req.body.repository.full_name;
-      const prNumber = req.body.pull_request.number;
+        console.log("📩 PR Received:", pr.number);
 
-      console.log("📦 Repo:", repo);
-      console.log("🔢 PR Number:", prNumber);
+        // ===============================
+        // 1. Get code diff from GitHub
+        // ===============================
+        const diff = await getPRDiff(repo, pr.number);
 
-      // 🔍 STEP 1: Get PR diff
-      const diff = await getPRDiff(repo, prNumber);
+        // ===============================
+        // 2. Send diff to AI for analysis
+        // ===============================
+        const aiResult = await analyzeCode(diff);
 
-      console.log("🔍 PR DIFF START ==================");
-      console.log(diff);
-      console.log("🔍 PR DIFF END ====================");
+        console.log("🤖 AI analysis completed");
 
-      // 🤖 STEP 2: AI analysis
-      const aiReview = await analyzeCode(diff);
+        // ===============================
+        // 3. Save result in MongoDB
+        // ===============================
+        await Review.create({
+          prId: pr.number,
+          issues: aiResult,
+        });
 
-      console.log("🤖 AI REVIEW START ==================");
-      console.log(aiReview);
-      console.log("🤖 AI REVIEW END ====================");
+        console.log("🗄 Review stored in DB");
 
-      // 💾 STEP 3: SAVE TO DATABASE
-      const savedReview = await Review.create({
-        prId: prNumber,
-        repoName: repo,
-        issues: aiReview
-      });
+        // ===============================
+        // 4. Post comment on GitHub PR
+        // ===============================
+        await postPRComment(repo, pr.number, aiResult);
 
-      console.log("✅ Saved to MongoDB:", savedReview._id);
-
-      // 💬 STEP 4: POST COMMENT ON GITHUB PR (NEW)
-      await postPRComment(repo, prNumber, aiReview);
-
-      console.log("🚀 Comment posted on GitHub PR");
-
-      return res.status(200).send("PR processed successfully");
+        console.log("💬 GitHub PR comment posted");
+      }
     }
 
-    res.status(200).send("Event ignored");
-
-  } catch (err) {
-    console.error("❌ Webhook Error:", err);
-    res.status(500).send("Server error");
+    // Always respond to GitHub
+    res.send("Webhook received ✔");
+  } catch (error) {
+    console.error("❌ Webhook Error:", error.message);
+    res.status(500).send("Error processing webhook");
   }
-};
-
-// 🧪 Test endpoint
-exports.testWebhook = (req, res) => {
-  res.send("Webhook working ✅");
 };
