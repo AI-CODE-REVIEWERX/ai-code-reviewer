@@ -22,15 +22,23 @@ app.get("/", (req, res) => {
 });
 
 // =======================
-// 🔗 WEBHOOK ROUTES (STEP 5)
+// 🔗 WEBHOOK ROUTES
 // =======================
 const webhookRoutes = require("./routes/webhookRoutes");
 app.use("/webhook", webhookRoutes);
 
 // =======================
+// ❌ GLOBAL ERROR HANDLING (IMPORTANT)
+// =======================
+app.use((err, req, res, next) => {
+  console.error("❌ Error:", err.message);
+  res.status(500).send("Internal Server Error");
+});
+
+// =======================
 // 🚀 START SERVER
 // =======================
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
