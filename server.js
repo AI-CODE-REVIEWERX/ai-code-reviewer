@@ -1,17 +1,12 @@
 const express = require("express");
 require("dotenv").config();
 
-// =======================
-// 🗄 DATABASE CONNECTION
-// =======================
 const connectDB = require("./db");
 connectDB();
 
 const app = express();
 
-// =======================
-// MIDDLEWARE
-// =======================
+// Middleware
 app.use(express.json());
 
 // =======================
@@ -28,7 +23,7 @@ const webhookRoutes = require("./routes/webhookRoutes");
 app.use("/webhook", webhookRoutes);
 
 // =======================
-// ❌ GLOBAL ERROR HANDLING (IMPORTANT)
+// ❌ GLOBAL ERROR HANDLING
 // =======================
 app.use((err, req, res, next) => {
   console.error("❌ Error:", err.message);
