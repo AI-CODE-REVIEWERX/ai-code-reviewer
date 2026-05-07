@@ -103,9 +103,3 @@ Webhook test updated
 
 Testing webhook trigger for AI review system
 webhook tested again
-Webhook final PR test - new change done
-
-
-AI Code Reviewer Running 🚀
-Atlas DB role access settings
-Webhook final success test
