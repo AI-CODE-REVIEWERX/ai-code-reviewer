@@ -2,12 +2,25 @@ const express = require("express");
 require("dotenv").config();
 
 const connectDB = require("./db");
-connectDB();
 
 const app = express();
 
+// =======================
+// 🗄️ DATABASE CONNECTION
+// =======================
+connectDB();
+
+// =======================
 // Middleware
-app.use(express.json());
+// =======================
+// This keeps raw body for GitHub signature verification
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf.toString();
+    },
+  })
+);
 
 // =======================
 // 🌐 TEST ROUTE
@@ -27,7 +40,10 @@ app.use("/webhook", webhookRoutes);
 // =======================
 app.use((err, req, res, next) => {
   console.error("❌ Error:", err.message);
-  res.status(500).send("Internal Server Error");
+  res.status(500).json({
+    success: false,
+    message: "Internal Server Error",
+  });
 });
 
 // =======================
@@ -36,5 +52,5 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
