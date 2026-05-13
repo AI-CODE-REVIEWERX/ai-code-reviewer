@@ -1,22 +1,24 @@
-const axios = require("axios");
+import axios from "axios";
 
-// ===============================
-// 🐙 GET PULL REQUEST DIFF
-// ===============================
-exports.getPRDiff = async (repo, prNumber) => {
+// GET PULL REQUEST DIFF
+export const getPRDiff = async (repo, prNumber) => {
   try {
+    if (!process.env.GITHUB_TOKEN) {
+      throw new Error("GITHUB_TOKEN is not defined in environment variables");
+    }
+
     const url = `https://api.github.com/repos/${repo}/pulls/${prNumber}`;
 
     const response = await axios.get(url, {
       headers: {
-        Authorization: `token ${process.env.GITHUB_TOKEN}`,
+        Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
         Accept: "application/vnd.github.v3.diff",
       },
     });
 
-    return response.data; // raw diff text
+    return response.data;
   } catch (error) {
-    console.error("❌ GitHub API Error:", error.message);
+    console.error("GitHub API Error:", error.response?.data || error.message);
     throw new Error("Failed to fetch PR diff from GitHub");
   }
 };
