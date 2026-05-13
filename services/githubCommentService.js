@@ -1,30 +1,56 @@
-const { Octokit } = require("@octokit/rest");
+import { Octokit } from "@octokit/rest";
 
-// ===============================
-// 🐙 GITHUB PR COMMENT SERVICE
-// ===============================
 const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN,
 });
 
-exports.postPRComment = async (repo, prNumber, issues) => {
+// GITHUB PR COMMENT SERVICE
+export const postPRComment = async (repo, prNumber, issues) => {
   try {
-    // Format AI issues into readable comment
-    let commentBody = "🤖 AI Code Review Report:\n\n";
+    if (!process.env.GITHUB_TOKEN) {
+      throw new Error("GITHUB_TOKEN is not defined in environment variables");
+    }
 
-    issues.forEach((issue, index) => {
-      commentBody += `
-### Issue ${index + 1}
-- 🔴 Type: ${issue.type}
-- 📝 Description: ${issue.description}
-- 💡 Fix: ${issue.suggestedFix}
-`;
-    });
-
-    // Split repo into owner/repo
     const [owner, repoName] = repo.split("/");
 
-    // Post comment on PR
+    if (!owner || !repoName) {
+      throw new Error("Invalid repository format");
+    }
+
+    let commentBody = "## AI Code Review Report\n\n";
+
+    if (!issues || issues.length === 0) {
+      commentBody += "No major issues found in this pull request.";
+    } else {
+      issues.forEach((issue, index) => {
+        commentBody += `
+### Issue ${index + 1}
+
+**Type:** ${issue.type || "N/A"}  
+**Severity:** ${issue.severity || "N/A"}  
+
+**Description:**  
+${issue.description || "No description provided"}
+
+**Suggested Fix:**  
+${issue.suggestedFix || "No fix suggested"}
+`;
+
+        if (issue.fixedCode) {
+          commentBody += `
+
+**Fixed Code:**
+
+\`\`\`js
+${issue.fixedCode}
+\`\`\`
+`;
+        }
+
+        commentBody += "\n---\n";
+      });
+    }
+
     await octokit.issues.createComment({
       owner,
       repo: repoName,
@@ -32,8 +58,9 @@ exports.postPRComment = async (repo, prNumber, issues) => {
       body: commentBody,
     });
 
-    console.log("✅ Comment posted on GitHub PR");
+    console.log("Comment posted on GitHub PR");
   } catch (error) {
-    console.error("❌ GitHub Comment Error:", error.message);
+    console.error("GitHub Comment Error:", error.response?.data || error.message);
+    throw error;
   }
 };
