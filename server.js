@@ -1,19 +1,22 @@
-const express = require("express");
-require("dotenv").config();
+import express from "express";
+import dotenv from "dotenv";
 
-const connectDB = require("./db");
+import connectDB from "./db.js";
+import webhookRoutes from "./routes/webhookRoutes.js";
+
+dotenv.config();
 
 const app = express();
 
-// =======================
-// 🗄️ DATABASE CONNECTION
-// =======================
+
+// DATABASE CONNECTION
+
 connectDB();
 
-// =======================
+
 // Middleware
-// =======================
-// This keeps raw body for GitHub signature verification
+
+// Keeps raw body for GitHub signature verification
 app.use(
   express.json({
     verify: (req, res, buf) => {
@@ -22,35 +25,35 @@ app.use(
   })
 );
 
-// =======================
-// 🌐 TEST ROUTE
-// =======================
+
+// TEST ROUTE
+
 app.get("/", (req, res) => {
   res.send("Server is running 🚀");
 });
 
-// =======================
-// 🔗 WEBHOOK ROUTES
-// =======================
-const webhookRoutes = require("./routes/webhookRoutes");
+
+// WEBHOOK ROUTES
+
 app.use("/webhook", webhookRoutes);
 
-// =======================
-// ❌ GLOBAL ERROR HANDLING
-// =======================
+
+// GLOBAL ERROR HANDLING
+
 app.use((err, req, res, next) => {
-  console.error("❌ Error:", err.message);
+  console.error("Error:", err.message);
+
   res.status(500).json({
     success: false,
     message: "Internal Server Error",
   });
 });
 
-// =======================
-// 🚀 START SERVER
-// =======================
+
+// START SERVER
+
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(` Server running on port ${PORT}`);
 });
