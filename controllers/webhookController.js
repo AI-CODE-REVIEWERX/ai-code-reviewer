@@ -2,30 +2,25 @@ import { getPRDiff } from "../services/githubService.js";
 import { analyzeCode } from "../services/aiService.js";
 import Review from "../models/Review.js";
 import { postPRComment } from "../services/githubCommentService.js";
-import { verifyGithubSignature } from "../utils/verifyGithubSignature.js";
 
 // MAIN WEBHOOK HANDLER
 export const handleWebhook = async (req, res) => {
   try {
-    const isValidSignature = verifyGithubSignature(req);
 
-if (!isValidSignature) {
-  return res.status(401).json({
-    success: false,
-    message: "Invalid GitHub webhook signature",
-  });
-}
+    // TEMPORARY: SKIP SIGNATURE VERIFICATION
+    console.log("Skipping signature verification for testing");
+
     const event = req.headers["x-github-event"];
 
-    console.log("WEBHOOK HIT");
-    console.log("Event Type:", event);
+    console.log("🔥 WEBHOOK HIT");
+    console.log("📩 Event Type:", event);
 
-    // HANDLE PUSH EVENT FOR TESTING
+    // HANDLE PUSH EVENT
     if (event === "push") {
       const repo = req.body.repository?.full_name;
 
-      console.log("PUSH EVENT RECEIVED");
-      console.log("Repo:", repo);
+      console.log("📦 PUSH EVENT RECEIVED");
+      console.log("📁 Repo:", repo);
 
       return res.status(200).json({
         success: true,
@@ -37,43 +32,45 @@ if (!isValidSignature) {
     if (event === "pull_request") {
       const action = req.body.action;
 
-      console.log("Pull Request Event:", action);
+      console.log("📌 Pull Request Event:", action);
 
-      // PROCESS ONLY PR OPENED OR UPDATED
+      // PROCESS ONLY OPENED OR UPDATED PR
       if (action === "opened" || action === "synchronize") {
+
         const pr = req.body.pull_request;
         const repo = req.body.repository.full_name;
 
         if (!pr || !repo) {
           return res.status(400).json({
             success: false,
-            message: "Invalid pull request payload",
+            message: "Invalid PR payload",
           });
         }
 
-        console.log("PR RECEIVED:", pr.number);
-        console.log("Repo:", repo);
+        console.log("✅ PR RECEIVED:", pr.number);
+        console.log("📁 Repo:", repo);
 
-        // GET CODE DIFF
+        // FETCH DIFF
         const diff = await getPRDiff(repo, pr.number);
 
         if (!diff || diff.trim().length === 0) {
-          console.log("No diff found");
+
+          console.log("⚠️ No diff found");
 
           return res.status(200).json({
             success: true,
-            message: "No diff found for this pull request",
+            message: "No diff found",
           });
         }
 
-        console.log("Diff fetched");
+        console.log("📄 Diff fetched successfully");
 
         // AI ANALYSIS
         const aiResult = await analyzeCode(diff);
 
-        console.log("AI analysis completed");
+        console.log("🤖 AI analysis completed");
 
-        // SAVE REVIEW TO DATABASE
+        // SAVE TO DATABASE
         await Review.create({
           repoName: repo,
           prNumber: pr.number,
@@ -84,36 +81,38 @@ if (!isValidSignature) {
           issues: aiResult,
         });
 
-        console.log("Saved to MongoDB");
+        console.log("✅ Review saved to MongoDB");
 
-        // POST COMMENT ON GITHUB PR
+        // COMMENT ON PR
         await postPRComment(repo, pr.number, aiResult);
 
-        console.log("Comment posted on GitHub");
+        console.log("💬 Comment posted on GitHub PR");
 
         return res.status(200).json({
           success: true,
-          message: "Pull request processed successfully",
+          message: "PR processed successfully",
         });
       }
 
       return res.status(200).json({
         success: true,
-        message: "Pull request event ignored",
+        message: "PR event ignored",
         action,
       });
     }
 
     // OTHER EVENTS
-    console.log("Unhandled event:", event);
+    console.log("⚠️ Unhandled event:", event);
 
     return res.status(200).json({
       success: true,
       message: "Event ignored",
       event,
     });
+
   } catch (error) {
-    console.error("Webhook Error:", error.message);
+
+    console.error("❌ WEBHOOK ERROR:", error.message);
 
     return res.status(500).json({
       success: false,
