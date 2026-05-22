@@ -1,90 +1,123 @@
-const { getPRDiff } = require("../services/githubService");
-const { analyzeCode } = require("../services/aiService");
-const Review = require("../models/Review");
-const { postPRComment } = require("../services/githubCommentService");
+import { getPRDiff } from "../services/githubService.js";
+import { analyzeCode } from "../services/aiService.js";
+import Review from "../models/Review.js";
+import { postPRComment } from "../services/githubCommentService.js";
 
-// ===============================
-// 🧠 MAIN WEBHOOK HANDLER
-// ===============================
-exports.handleWebhook = async (req, res) => {
+// MAIN WEBHOOK HANDLER
+export const handleWebhook = async (req, res) => {
   try {
+
+    // TEMPORARY: SKIP SIGNATURE VERIFICATION
+    console.log("Skipping signature verification for testing");
+
     const event = req.headers["x-github-event"];
 
     console.log("🔥 WEBHOOK HIT");
-    console.log("Event Type:", event);
+    console.log("📩 Event Type:", event);
 
-    // ===============================
-    // 🚀 HANDLE PUSH EVENT (for testing)
-    // ===============================
+    // HANDLE PUSH EVENT
     if (event === "push") {
       const repo = req.body.repository?.full_name;
 
-      console.log("🚀 PUSH EVENT RECEIVED");
-      console.log("Repo:", repo);
+      console.log("📦 PUSH EVENT RECEIVED");
+      console.log("📁 Repo:", repo);
 
-      return res.status(200).send("Push event received ✔");
+      return res.status(200).json({
+        success: true,
+        message: "Push event received",
+      });
     }
 
-    // ===============================
-    // 🔗 HANDLE PULL REQUEST EVENT
-    // ===============================
+    // HANDLE PULL REQUEST EVENT
     if (event === "pull_request") {
       const action = req.body.action;
 
-      console.log("📩 Pull Request Event:", action);
+      console.log("📌 Pull Request Event:", action);
 
-      // Only when PR is opened
-      if (action === "opened") {
+      // PROCESS ONLY OPENED OR UPDATED PR
+      if (action === "opened" || action === "synchronize") {
+
         const pr = req.body.pull_request;
         const repo = req.body.repository.full_name;
 
-        console.log("📩 PR RECEIVED:", pr.number);
+        if (!pr || !repo) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid PR payload",
+          });
+        }
 
-        // ===============================
-        // 1. Get code diff
-        // ===============================
+        console.log("✅ PR RECEIVED:", pr.number);
+        console.log("📁 Repo:", repo);
+
+        // FETCH DIFF
         const diff = await getPRDiff(repo, pr.number);
 
-        console.log("📄 Diff fetched");
+        if (!diff || diff.trim().length === 0) {
 
-        // ===============================
-        // 2. AI analysis
-        // ===============================
+          console.log("⚠️ No diff found");
+
+          return res.status(200).json({
+            success: true,
+            message: "No diff found",
+          });
+        }
+
+        console.log("📄 Diff fetched successfully");
+
+        // AI ANALYSIS
         const aiResult = await analyzeCode(diff);
 
         console.log("🤖 AI analysis completed");
 
-        // ===============================
-        // 3. Save to DB
-        // ===============================
+        // SAVE TO DATABASE
         await Review.create({
-          prId: pr.number,
+          repoName: repo,
+          prNumber: pr.number,
+          prTitle: pr.title,
+          prUrl: pr.html_url,
+          author: pr.user?.login,
+          action,
           issues: aiResult,
         });
 
-        console.log("🗄 Saved to MongoDB");
+        console.log("✅ Review saved to MongoDB");
 
-        // ===============================
-        // 4. Comment on PR
-        // ===============================
+        // COMMENT ON PR
         await postPRComment(repo, pr.number, aiResult);
 
-        console.log("💬 Comment posted on GitHub");
+        console.log("💬 Comment posted on GitHub PR");
 
-        return res.status(200).send("PR processed ✔");
+        return res.status(200).json({
+          success: true,
+          message: "PR processed successfully",
+        });
       }
 
-      return res.status(200).send("PR event ignored (not opened)");
+      return res.status(200).json({
+        success: true,
+        message: "PR event ignored",
+        action,
+      });
     }
 
-    // ===============================
-    // ⚠️ OTHER EVENTS
-    // ===============================
+    // OTHER EVENTS
     console.log("⚠️ Unhandled event:", event);
 
-    res.status(200).send("Event ignored");
+    return res.status(200).json({
+      success: true,
+      message: "Event ignored",
+      event,
+    });
+
   } catch (error) {
-    console.error("❌ Webhook Error:", error.message);
-    res.status(500).send("Error processing webhook");
+
+    console.error("❌ WEBHOOK ERROR:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Error processing webhook",
+      error: error.message,
+    });
   }
 };

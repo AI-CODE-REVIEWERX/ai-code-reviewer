@@ -1,57 +1,75 @@
-const axios = require("axios");
+import axios from "axios";
 
-// ===============================
-// 🤖 AI CODE ANALYSIS SERVICE
-// ===============================
-exports.analyzeCode = async (diff) => {
+// AI CODE ANALYSIS SERVICE
+export const analyzeCode = async (diff) => {
   try {
+    // LIMIT HUGE DIFFS
+    const trimmedDiff = diff.slice(0, 12000);
+
     const prompt = `
-You are an expert code reviewer.
+You are a senior software engineer reviewing a GitHub pull request.
 
-Analyze the following GitHub code diff and find:
+Analyze ONLY the changed code diff.
+
+Find:
 - Bugs
-- Security issues
-- Performance problems
-- Improvement suggestions
+- Security vulnerabilities
+- Performance issues
+- Bad coding practices
 
-Return response in JSON format like:
+Return ONLY valid JSON in this exact format:
+
 [
   {
-    "type": "bug/security/improvement",
-    "description": "Explain the issue",
-    "suggestedFix": "How to fix it"
+    "type": "bug/security/performance/improvement",
+    "severity": "low/medium/high",
+    "description": "Explain the issue clearly",
+    "suggestedFix": "Explain how to fix it",
+    "fixedCode": "Provide corrected code if possible"
   }
 ]
 
 Code Diff:
-${diff}
+${trimmedDiff}
 `;
 
-    // ===============================
-    // 🔥 OPTION 1: MOCK RESPONSE (FOR TESTING)
-    // ===============================
-    return [
-      {
-        type: "bug",
-        description: "Possible null pointer issue",
-        suggestedFix: "Add null check before usage",
-      },
-      {
-        type: "improvement",
-        description: "Code can be optimized",
-        suggestedFix: "Use better loop structure",
-      },
-    ];
+    // MOCK MODE FOR TESTING
+    if (process.env.MOCK_AI === "true") {
+      return [
+        {
+          type: "bug",
+          severity: "medium",
+          description: "Possible null pointer issue",
+          suggestedFix: "Add null check before accessing object",
+          fixedCode: "if(user){ console.log(user.name) }",
+        },
+        {
+          type: "improvement",
+          severity: "low",
+          description: "Loop can be optimized",
+          suggestedFix: "Use array methods instead of manual loops",
+          fixedCode: "items.map(item => item.name)",
+        },
+      ];
+    }
 
-    // ===============================
-    // 🔥 OPTION 2: REAL AI (UNCOMMENT LATER)
-    // ===============================
-    /*
+    // REAL AI API CALL
     const response = await axios.post(
       "https://api.openai.com/v1/chat/completions",
       {
         model: "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an expert AI code reviewer.",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.2,
       },
       {
         headers: {
@@ -61,10 +79,38 @@ ${diff}
       }
     );
 
-    return JSON.parse(response.data.choices[0].message.content);
-    */
+    const aiContent =
+      response.data.choices[0].message.content;
+
+    try {
+      return JSON.parse(aiContent);
+    } catch (parseError) {
+      console.error("Failed to parse AI JSON response");
+
+      return [
+        {
+          type: "error",
+          severity: "low",
+          description: "AI response parsing failed",
+          suggestedFix: "Check AI response formatting",
+          fixedCode: "",
+        },
+      ];
+    }
   } catch (error) {
-    console.error("❌ AI Service Error:", error.message);
-    return [];
+    console.error(
+      "AI Service Error:",
+      error.response?.data || error.message
+    );
+
+    return [
+      {
+        type: "error",
+        severity: "high",
+        description: "AI analysis failed",
+        suggestedFix: "Check AI service configuration",
+        fixedCode: "",
+      },
+    ];
   }
 };
