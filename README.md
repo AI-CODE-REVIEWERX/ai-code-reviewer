@@ -3,7 +3,7 @@
 # 🚀 AI Code Reviewer & Bug Patcher
 An AI-powered system that automatically reviews GitHub Pull Requests, detects bugs, and suggests fixes using AI.
 
-## 🧠 How it Works
+## 🧠 How it Workss
 GitHub PR → Webhook → Backend → AI → MongoDB → Review Output
 
 
