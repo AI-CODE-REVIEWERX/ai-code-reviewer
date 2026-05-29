@@ -1,0 +1,32 @@
+{
+  "name": "ai-code-reviewer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "package.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@octokit/rest": "^22.0.1",
+    "axios": "^1.16.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mongodb": "^7.2.0",
+    "mongoose": "^9.6.1",
+    "openai": "^6.34.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chachleshrutika59-cmyk/ai-code-reviewerr.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chachleshrutika59-cmyk/ai-code-reviewerr/issues"
+  },
+  "homepage": "https://github.com/chachleshrutika59-cmyk/ai-code-reviewerr#readme"
+}
